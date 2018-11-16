@@ -34,7 +34,6 @@ fi
 if [ "${TRAVIS_BRANCH:-}" == "master" -a "${TRAVIS_PULL_REQUEST_BRANCH:-}" == "" -o -n "${TRAVIS_TAG:-}" ]; then
     DOCKER_SERVER="docker.ci.diabeloop.eu"
     DOCKER_REPO="${DOCKER_SERVER}/${TRAVIS_REPO_SLUG#*/}"
-    echo ${DOCKER_REPO}
 
     echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin ${DOCKER_SERVER}
 
