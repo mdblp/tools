@@ -23,6 +23,7 @@ fi
 
 if [ "${TRAVIS_BRANCH:-}" == "dblp" -a "${TRAVIS_PULL_REQUEST_BRANCH:-}" == "" -o -n "${TRAVIS_TAG:-}" ]; then
     DOCKER_REPO="docker.ci.diabeloop.eu/${TRAVIS_REPO_SLUG#*/}"
+    DOCKER_TAG=${TRAVIS_TAG/dblp./}
 
     echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin ${DOCKER_REPO}
 
@@ -31,8 +32,8 @@ if [ "${TRAVIS_BRANCH:-}" == "dblp" -a "${TRAVIS_PULL_REQUEST_BRANCH:-}" == "" -
     if [ "${TRAVIS_BRANCH:-}" == "dblp" -a "${TRAVIS_PULL_REQUEST_BRANCH:-}" == "" ]; then
         docker push "${DOCKER_REPO}"
     fi
-    if [ -n "${TRAVIS_TAG:-}" ]; then
-        docker tag "${DOCKER_REPO}" "${DOCKER_REPO}:${TRAVIS_TAG}"
-        docker push "${DOCKER_REPO}:${TRAVIS_TAG}"
+    if [ -n "${DOCKER_TAG:-}" ]; then
+        docker tag "${DOCKER_REPO}" "${DOCKER_REPO}:${DOCKER_TAG}"
+        docker push "${DOCKER_REPO}:${DOCKER_TAG}"
     fi
 fi
