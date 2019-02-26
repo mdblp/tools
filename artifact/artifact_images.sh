@@ -2,9 +2,9 @@
 
 # get diabeloop images
 
-wget -v -O favicon.ico 'https://raw.githubusercontent.com/mdblp/tools/feature/add-diabeloop-images/artifact/images/favicon.ico'
+wget -v -O favicon.ico 'https://raw.githubusercontent.com/mdblp/tools/dblp/artifact/images/favicon.ico'
 
-wget -v -O logo.png 'https://raw.githubusercontent.com/mdblp/tools/feature/add-diabeloop-images/artifact/images/logo.png'
+wget -v -O logo.png 'https://raw.githubusercontent.com/mdblp/tools/dblp/artifact/images/logo.png'
 
 if [ ! -d app/components/navbar/images/diabeloop ]; then
     mkdir app/components/navbar/images/diabeloop
