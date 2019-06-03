@@ -33,6 +33,7 @@ if [ -n "${TRAVIS_TAG:-}" ]; then
     rm -rf "${TMP_DIR}/"
 
     # Build Docker image
+    echo "Build image"
     docker build --tag "${DOCKER_REPO}" .
 fi
 
@@ -43,9 +44,11 @@ if [ "${TRAVIS_BRANCH:-}" == "master" -a "${TRAVIS_PULL_REQUEST_BRANCH:-}" == ""
     echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin ${DOCKER_REPO}
 
     if [ "${TRAVIS_BRANCH:-}" == "dblp" -a "${TRAVIS_PULL_REQUEST_BRANCH:-}" == "" ]; then
+        echo "Push image to ${DOCKER_REPO}"
         docker push "${DOCKER_REPO}"
     fi
     if [ -n "${DOCKER_TAG:-}" ]; then
+        echo "Tag and push image to ${DOCKER_REPO}"
         docker tag "${DOCKER_REPO}" "${DOCKER_REPO}:${DOCKER_TAG}"
         docker push "${DOCKER_REPO}:${DOCKER_TAG}"
     fi
