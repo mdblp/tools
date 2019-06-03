@@ -4,8 +4,6 @@ if [ "${TRAVIS_NODE_VERSION}" != "${ARTIFACT_NODE_VERSION}" ]; then
     exit 0
 fi
 
-DOCKER_REPO="docker.ci.diabeloop.eu/${TRAVIS_REPO_SLUG#*/}"
-
 if [ -n "${TRAVIS_TAG:-}" ]; then
     ARTIFACT_DIR='deploy'
 
@@ -31,14 +29,15 @@ if [ -n "${TRAVIS_TAG:-}" ]; then
     tar -c -z -f "${APP_DIR}/${APP_TAG}.tar.gz" -C "${TMP_DIR}" "${APP_TAG}" || { echo 'ERROR: Unable to create artifact'; exit 1; }
 
     rm -rf "${TMP_DIR}/"
-
-    # Build Docker image
-    echo "Build image"
-    docker build --tag "${DOCKER_REPO}" .
 fi
 
+# Build Docker image whatever
+DOCKER_REPO="docker.ci.diabeloop.eu/${TRAVIS_REPO_SLUG#*/}"
+echo "Build image"
+docker build --tag "${DOCKER_REPO}" .
+
 if [ "${TRAVIS_BRANCH:-}" == "master" -a "${TRAVIS_PULL_REQUEST_BRANCH:-}" == "" -o -n "${TRAVIS_TAG:-}" ]; then
-    # Deploy Dokcer image
+    # Publish Docker image
     DOCKER_TAG=${TRAVIS_TAG/dblp./}
 
     echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin ${DOCKER_REPO}
