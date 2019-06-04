@@ -21,18 +21,24 @@ if [ -n "${TRAVIS_TAG:-}" ]; then
     tar -c -z -f "${APP_DIR}/${APP_TAG}.tar.gz" -C "${APP_DIR}" "${APP_TAG}" || { echo 'ERROR: Unable to create artifact'; exit 1; }
 fi
 
+# Build Docker images whatever
+DOCKER_REPO="docker.ci.diabeloop.eu/${TRAVIS_REPO_SLUG#*/}"
+echo "Build Docker images"
+docker build --tag "${DOCKER_REPO}:development" --target=development .
+docker build --tag "${DOCKER_REPO}" .
+
 if [ "${TRAVIS_BRANCH:-}" == "dblp" -a "${TRAVIS_PULL_REQUEST_BRANCH:-}" == "" -o -n "${TRAVIS_TAG:-}" ]; then
-    DOCKER_REPO="docker.ci.diabeloop.eu/${TRAVIS_REPO_SLUG#*/}"
+    # Publish Docker images
     DOCKER_TAG=${TRAVIS_TAG/dblp./}
 
     echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin ${DOCKER_REPO}
 
-    docker build --tag "${DOCKER_REPO}:development" --target=development .
-    docker build --tag "${DOCKER_REPO}" .
     if [ "${TRAVIS_BRANCH:-}" == "dblp" -a "${TRAVIS_PULL_REQUEST_BRANCH:-}" == "" ]; then
+        echo "Push images to ${DOCKER_REPO}"
         docker push "${DOCKER_REPO}"
     fi
     if [ -n "${DOCKER_TAG:-}" ]; then
+        echo "Tag and push image to ${DOCKER_REPO}"
         docker tag "${DOCKER_REPO}" "${DOCKER_REPO}:${DOCKER_TAG}"
         docker push "${DOCKER_REPO}:${DOCKER_TAG}"
     fi

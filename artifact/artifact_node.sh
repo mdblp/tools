@@ -31,17 +31,23 @@ if [ -n "${TRAVIS_TAG:-}" ]; then
     rm -rf "${TMP_DIR}/"
 fi
 
+# Build Docker image whatever
+DOCKER_REPO="docker.ci.diabeloop.eu/${TRAVIS_REPO_SLUG#*/}"
+echo "Build image"
+docker build --tag "${DOCKER_REPO}" .
+
 if [ "${TRAVIS_BRANCH:-}" == "master" -a "${TRAVIS_PULL_REQUEST_BRANCH:-}" == "" -o -n "${TRAVIS_TAG:-}" ]; then
-    DOCKER_REPO="docker.ci.diabeloop.eu/${TRAVIS_REPO_SLUG#*/}"
+    # Publish Docker image
     DOCKER_TAG=${TRAVIS_TAG/dblp./}
 
     echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin ${DOCKER_REPO}
 
-    docker build --tag "${DOCKER_REPO}" .
     if [ "${TRAVIS_BRANCH:-}" == "dblp" -a "${TRAVIS_PULL_REQUEST_BRANCH:-}" == "" ]; then
+        echo "Push image to ${DOCKER_REPO}"
         docker push "${DOCKER_REPO}"
     fi
     if [ -n "${DOCKER_TAG:-}" ]; then
+        echo "Tag and push image to ${DOCKER_REPO}"
         docker tag "${DOCKER_REPO}" "${DOCKER_REPO}:${DOCKER_TAG}"
         docker push "${DOCKER_REPO}:${DOCKER_TAG}"
     fi
