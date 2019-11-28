@@ -34,7 +34,7 @@ fi
 # Build Docker image whatever
 DOCKER_REPO="docker.ci.diabeloop.eu/${TRAVIS_REPO_SLUG#*/}"
 echo "Build image"
-docker build --tag "${DOCKER_REPO}" .
+docker build --tag "${DOCKER_REPO}" --build-arg npm_token=${nexus_token} .
 
 if [ "${TRAVIS_BRANCH:-}" == "master" -a "${TRAVIS_PULL_REQUEST_BRANCH:-}" == "" -o -n "${TRAVIS_TAG:-}" ]; then
     # Publish Docker image
