@@ -5,7 +5,8 @@ if [ "${TRAVIS_NODE_VERSION}" != "${ARTIFACT_NODE_VERSION}" ]; then
 fi
 
 # If project has set BUILD_OPENAPI_DOC environment variable to true, then we build the openapi doc
-if [ ${BUILD_OPENAPI_DOC} = true ]; then
+if [ ${BUILD_OPENAPI_DOC:-false} = true ]; then
+    echo "Build documentation"
     npm run build-doc
 fi
 
