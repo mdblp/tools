@@ -57,7 +57,7 @@ if [ "${TRAVIS_BRANCH:-none}" == "dblp" -a "${TRAVIS_PULL_REQUEST:-false}" == "f
     echo "Docker login"
     echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin ${DOCKER_REPO}
 
-    echo "Tag and push image to ${DOCKER_REPO}"
+    echo "Tag and push image to ${DOCKER_REPO}:${DOCKER_TAG}"
     docker tag "${DOCKER_REPO}" "${DOCKER_REPO}:${DOCKER_TAG}"
     docker push "${DOCKER_REPO}:${DOCKER_TAG}"
 else
