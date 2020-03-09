@@ -57,14 +57,9 @@ if [ "${TRAVIS_BRANCH:-none}" == "dblp" -a "${TRAVIS_PULL_REQUEST:-false}" == "f
     echo "Docker login"
     echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin ${DOCKER_REPO}
 
-    echo "Push image to ${DOCKER_REPO}"
-    docker push "${DOCKER_REPO}"
-
-    if [ -n "${DOCKER_TAG:-}" ]; then
-        echo "Tag and push image to ${DOCKER_REPO}"
-        docker tag "${DOCKER_REPO}" "${DOCKER_REPO}:${DOCKER_TAG}"
-        docker push "${DOCKER_REPO}:${DOCKER_TAG}"
-    fi
+    echo "Tag and push image to ${DOCKER_REPO}"
+    docker tag "${DOCKER_REPO}" "${DOCKER_REPO}:${DOCKER_TAG}"
+    docker push "${DOCKER_REPO}:${DOCKER_TAG}"
 else
     echo "Wrong branch or pull request, not pushing the docker image"
 fi
