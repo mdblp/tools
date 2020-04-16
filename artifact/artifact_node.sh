@@ -63,5 +63,5 @@ if [ -n "${TRAVIS_TAG}" -a "${TRAVIS_PULL_REQUEST:-false}" == "false" ]; then
     docker tag "${DOCKER_REPO}" "${DOCKER_REPO}:${DOCKER_TAG}"
     docker push "${DOCKER_REPO}:${DOCKER_TAG}"
 else
-    echo "Wrong branch or pull request, not pushing the docker image"
+    echo "Not a tag or pull request, not pushing the docker image"
 fi
