@@ -50,7 +50,9 @@ DOCKER_REPO="docker.ci.diabeloop.eu/${TRAVIS_REPO_SLUG#*/}"
 echo "Building docker image"
 docker build --tag "${DOCKER_REPO}" --build-arg npm_token=${nexus_token} .
 
-if [ "${TRAVIS_BRANCH:-none}" == "dblp" -a "${TRAVIS_PULL_REQUEST:-false}" == "false" -a -n "${TRAVIS_TAG}" ]; then
+# Publish docker image only when we have a tag.
+# To avoid publishing 2x (on the branch build + PR) do not do it on the PR build.
+if [ -n "${TRAVIS_TAG}" -a "${TRAVIS_PULL_REQUEST:-false}" == "false" ]; then
     # Publish Docker image
     DOCKER_TAG=${TRAVIS_TAG/dblp./}
 
