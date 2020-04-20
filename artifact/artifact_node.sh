@@ -1,5 +1,13 @@
 #!/bin/bash -eu
 
+# Print some variables, so we can debug this script if something goes wrong
+echo "ARTIFACT_NODE_VERSION: ${ARTIFACT_NODE_VERSION}"
+echo "TRAVIS_NODE_VERSION: ${TRAVIS_NODE_VERSION}"
+echo "TRAVIS_BRANCH: ${TRAVIS_BRANCH}"
+echo "TRAVIS_PULL_REQUEST: ${TRAVIS_PULL_REQUEST}"
+echo "TRAVIS_TAG: ${TRAVIS_TAG}"
+echo "TRAVIS_REPO_SLUG: ${TRAVIS_REPO_SLUG}"
+
 if [ "${TRAVIS_NODE_VERSION}" != "${ARTIFACT_NODE_VERSION}" ]; then
     exit 0
 fi
@@ -39,22 +47,21 @@ fi
 
 # Build Docker image whatever
 DOCKER_REPO="docker.ci.diabeloop.eu/${TRAVIS_REPO_SLUG#*/}"
-echo "Build image"
+echo "Building docker image"
 docker build --tag "${DOCKER_REPO}" --build-arg npm_token=${nexus_token} .
 
-if [ "${TRAVIS_BRANCH:-}" == "master" -a "${TRAVIS_PULL_REQUEST_BRANCH:-}" == "" -o -n "${TRAVIS_TAG:-}" ]; then
+# Publish docker image only when we have a tag.
+# To avoid publishing 2x (on the branch build + PR) do not do it on the PR build.
+if [ -n "${TRAVIS_TAG}" -a "${TRAVIS_PULL_REQUEST:-false}" == "false" ]; then
     # Publish Docker image
     DOCKER_TAG=${TRAVIS_TAG/dblp./}
 
+    echo "Docker login"
     echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin ${DOCKER_REPO}
 
-    if [ "${TRAVIS_BRANCH:-}" == "dblp" -a "${TRAVIS_PULL_REQUEST_BRANCH:-}" == "" ]; then
-        echo "Push image to ${DOCKER_REPO}"
-        docker push "${DOCKER_REPO}"
-    fi
-    if [ -n "${DOCKER_TAG:-}" ]; then
-        echo "Tag and push image to ${DOCKER_REPO}"
-        docker tag "${DOCKER_REPO}" "${DOCKER_REPO}:${DOCKER_TAG}"
-        docker push "${DOCKER_REPO}:${DOCKER_TAG}"
-    fi
+    echo "Tag and push image to ${DOCKER_REPO}:${DOCKER_TAG}"
+    docker tag "${DOCKER_REPO}" "${DOCKER_REPO}:${DOCKER_TAG}"
+    docker push "${DOCKER_REPO}:${DOCKER_TAG}"
+else
+    echo "Not a tag or pull request, not pushing the docker image"
 fi
