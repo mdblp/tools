@@ -33,6 +33,11 @@ echo "Build Docker images"
 docker build --tag "${DOCKER_REPO}:development" --target=development .
 docker build --tag "${DOCKER_REPO}" .
 
+# Microscanner security scan on the built image
+wget -q -O scanDockerImage.sh 'https://raw.githubusercontent.com/mdblp/tools/feature/add_microscanner/artifact/scanDockerImage.sh'
+chmod +x scanDockerImage.sh
+MICROSCANNER_TOKEN=${microscanner_token} ./scanDockerImage.sh ${DOCKER_REPO}
+
 if [ "${TRAVIS_BRANCH:-}" == "dblp" -a "${TRAVIS_PULL_REQUEST_BRANCH:-}" == "" -o -n "${TRAVIS_TAG:-}" ]; then
     # Publish Docker images
     DOCKER_TAG=${TRAVIS_TAG/dblp./}
