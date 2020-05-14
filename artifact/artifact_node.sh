@@ -18,6 +18,12 @@ if [ ${BUILD_OPENAPI_DOC:-false} = true ]; then
     npm run build-doc
 fi
 
+# If project has set BUILD_SOUP environment variable to true, then we build the SOUPs list
+if [ ${BUILD_SOUP:-false} = true ]; then
+    echo "Build SOUPs list"
+    npm run build-soup
+fi
+
 if [ -n "${TRAVIS_TAG:-}" ]; then
     ARTIFACT_DIR='deploy'
 
