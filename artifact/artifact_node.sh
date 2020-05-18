@@ -56,6 +56,11 @@ DOCKER_REPO="docker.ci.diabeloop.eu/${TRAVIS_REPO_SLUG#*/}"
 echo "Building docker image"
 docker build --tag "${DOCKER_REPO}" --build-arg npm_token=${nexus_token} .
 
+# Microscanner security scan on the built image
+wget -q -O scanDockerImage.sh 'https://raw.githubusercontent.com/mdblp/tools/feature/add_microscanner/artifact/scanDockerImage.sh'
+chmod +x scanDockerImage.sh
+MICROSCANNER_TOKEN=${microscanner_token} ./scanDockerImage.sh ${DOCKER_REPO}
+
 # Publish docker image only when we have a tag.
 # To avoid publishing 2x (on the branch build + PR) do not do it on the PR build.
 if [ -n "${TRAVIS_TAG}" -a "${TRAVIS_PULL_REQUEST:-false}" == "false" ]; then
