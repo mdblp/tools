@@ -1,4 +1,4 @@
-#!/bin/bash -eu
+#!/bin/bash -eux
 
 if [ "${TRAVIS_GO_VERSION}" != "${ARTIFACT_GO_VERSION}" ]; then
     exit 0
@@ -8,6 +8,13 @@ fi
 if [ ${BUILD_OPENAPI_DOC:-false} = true ]; then
     echo "Build documentation"
     ./buildDoc.sh
+fi
+
+# If project has set BUILD_SOUP environment variable to true, then we build the SOUPs list
+SOUP_SCRIPT=${SOUP_SCRIPT:-buildSoup.sh}
+if [ ${BUILD_SOUP:-false} = true -a -f ${SOUP_SCRIPT} ]; then
+    echo "Build SOUPs list"
+    ./${SOUP_SCRIPT}
 fi
 
 if [ -n "${TRAVIS_TAG:-}" ]; then
