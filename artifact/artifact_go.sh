@@ -5,9 +5,10 @@ if [ "${TRAVIS_GO_VERSION}" != "${ARTIFACT_GO_VERSION}" ]; then
 fi
 
 # If project has set BUILD_OPENAPI_DOC environment variable to true, then we build the openapi doc
-if [ ${BUILD_OPENAPI_DOC:-false} = true ]; then
+OPENAPI_SCRIPT=${OPENAPI_SCRIPT:-buildDoc.sh}
+if [ ${BUILD_OPENAPI_DOC:-false} = true -a -f ${OPENAPI_SCRIPT} ]; then
     echo "Build documentation"
-    ./buildDoc.sh
+    ./${OPENAPI_SCRIPT}
 fi
 
 # If project has set BUILD_SOUP environment variable to true, then we build the SOUPs list
