@@ -76,7 +76,7 @@ main() {
     if [ ${SECURITY_SCAN:-false} = true ]; then
         echo "Security scan"
         # Microscanner security scan on the built image
-        wget -q -O scanDockerImage.sh 'https://raw.githubusercontent.com/mdblp/tools/feature/add_microscanner/artifact/scanDockerImage.sh'
+        wget -q -O scanDockerImage.sh 'https://raw.githubusercontent.com/mdblp/tools/dblp/artifact/scanDockerImage.sh'
         chmod +x scanDockerImage.sh
         MICROSCANNER_TOKEN=${microscanner_token} ./scanDockerImage.sh ${DOCKER_REPO}
     fi
