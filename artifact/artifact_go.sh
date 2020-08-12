@@ -6,12 +6,12 @@ pushDocker() {
     # $3 = registry password
     # $4 = image repository
     # $5 = image version
-    local image_name="$1/$4"
+    local img_tag="$1/$4:$5"
     echo "Tag image"
-    docker tag "$4" "${image_name}:$5"
+    docker tag "$4" "${img_tag}"
     echo "Login, push and logout"
     echo "$3" | docker login --username "$2" --password-stdin $1
-    docker push "${image_name}"
+    docker push "${img_tag}"
     docker logout $1
 }
 
