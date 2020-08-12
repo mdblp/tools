@@ -13,7 +13,7 @@ echo "NO_DEFAULT_PACKAGING: ${NO_DEFAULT_PACKAGING:-false}"
 
 REPO_SLUG="${TRAVIS_REPO_SLUG:-mdblp}"
 APP="${REPO_SLUG#*/}"
-DOCKER_REPO="docker.ci.diabeloop.eu/${APP}"
+DOCKER_REPO="${APP}"
 
 # If project has set BUILD_OPENAPI_DOC environment variable to true, then we build the openapi doc
 function buildDocumentation {
@@ -123,8 +123,8 @@ function buildDockerImage {
         esac
     done
 
-    echo "Building docker image ${DOCKER_REPO}${DOCKER_TAG} using ${DOCKER_FILE} from ${DOCKER_TARGET_DIR}"
-    docker build --tag "${DOCKER_REPO}${DOCKER_TAG}" --build-arg npm_token="${nexus_token}" -f "${DOCKER_FILE}" "${DOCKER_TARGET_DIR}"
+    echo "Building docker image ${DOCKER_REPO} using ${DOCKER_FILE} from ${DOCKER_TARGET_DIR}"
+    docker build --tag "${DOCKER_REPO}" --build-arg npm_token="${nexus_token}" -f "${DOCKER_FILE}" "${DOCKER_TARGET_DIR}"
 
     if [ "${SECURITY_SCAN:-false}" = "true" ]; then
         echo "Security scan of ${DOCKER_REPO}${DOCKER_SCAN_TAG}"
@@ -134,23 +134,41 @@ function buildDockerImage {
             docker build --target "${DOCKER_SCAN_TAG#*:}" --tag "${DOCKER_REPO}${DOCKER_SCAN_TAG}" --build-arg npm_token="${nexus_token}" -f "${DOCKER_FILE}" "${DOCKER_TARGET_DIR}"
         fi
         wget -q -O scanDockerImage.sh 'https://raw.githubusercontent.com/mdblp/tools/feature/add_microscanner/artifact/scanDockerImage.sh'
-        MICROSCANNER_TOKEN="${microscanner_token}" bash ./scanDockerImage.sh "${DOCKER_REPO}${DOCKER_SCAN_TAG}"
+        MICROSCANNER_TOKEN="${MICROSCANNER_TOKEN}" bash ./scanDockerImage.sh "${DOCKER_REPO}${DOCKER_SCAN_TAG}"
     fi
+}
+
+pushDocker() {
+    # $1 = docker registry
+    # $2 = registry username
+    # $3 = registry password
+    # $4 = image repository
+    # $5 = image version
+    local img_tag="$1/$4:$5"
+    echo "Tag image"
+    docker tag "$4" "${img_tag}"
+    echo "Login, push and logout"
+    echo "$3" | docker login --username "$2" --password-stdin $1
+    docker push "${img_tag}"
+    docker logout $1
 }
 
 # Publish docker image only when we have a tag.
 # To avoid publishing 2x (on the branch build + PR) do not do it on the PR build.
 function publishDockerImage {
     if [ -n "${TRAVIS_TAG:-}" -a "${TRAVIS_PULL_REQUEST:-false}" == "false" -a -n "${DOCKER_USERNAME:-}" -a -n "${DOCKER_PASSWORD:-}" ]; then
-        # Publish Docker image
-        DOCKER_TAG=${TRAVIS_TAG/dblp./}
+        # This line below removes "dblp." from the TRAVIS_TAG
+        image_version=${TRAVIS_TAG/dblp./}
+        echo "Push image to Diabeloop registry"
+        pushDocker "docker.ci.diabeloop.eu" ${DOCKER_USERNAME} ${DOCKER_PASSWORD} ${DOCKER_REPO} ${image_version}
 
-        echo "Docker login"
-        echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin ${DOCKER_REPO}
-
-        echo "Tag and push image to ${DOCKER_REPO}:${DOCKER_TAG}"
-        docker tag "${DOCKER_REPO}" "${DOCKER_REPO}:${DOCKER_TAG}"
-        docker push "${DOCKER_REPO}:${DOCKER_TAG}"
+        # We push to Pictime except if the service does not want to and if we don't have a tag for release candidate
+        if [[ ${PUSH_DOCKER_PICTIME:-true} != false && ! ${TRAVIS_TAG} =~ rc[0-9] ]]; then
+            echo "Push image to Pictime registry"
+            pushDocker "registry.coreye.fr/diabeloop/artifacts/diabeloop_docker" ${PCT_DOCKER_USERNAME} ${PCT_DOCKER_PASSWORD} ${DOCKER_REPO} ${image_version}
+        else
+            echo "Skipping push on Pictime registry"
+        fi        
     else
         echo "Not a tag or pull request, not pushing the docker image"
     fi
