@@ -157,18 +157,25 @@ pushDocker() {
 # To avoid publishing 2x (on the branch build + PR) do not do it on the PR build.
 function publishDockerImage {
     if [ -n "${TRAVIS_TAG:-}" -a "${TRAVIS_PULL_REQUEST:-false}" == "false" -a -n "${DOCKER_USERNAME:-}" -a -n "${DOCKER_PASSWORD:-}" ]; then
+        echo "Docker push"
         # This line below removes "dblp." from the TRAVIS_TAG
         image_version=${TRAVIS_TAG/dblp./}
-        echo "Push image to Diabeloop registry"
-        pushDocker "docker.ci.diabeloop.eu" ${DOCKER_USERNAME} ${DOCKER_PASSWORD} ${DOCKER_REPO} ${image_version}
 
-        # We push to Pictime except if the service does not want to and if we don't have a tag for release candidate
-        if [[ ${PUSH_DOCKER_PICTIME:-true} != false && ! ${TRAVIS_TAG} =~ rc[0-9] ]]; then
-            echo "Push image to Pictime registry"
-            pushDocker "registry.coreye.fr/diabeloop/artifacts/diabeloop_docker" ${PCT_DOCKER_USERNAME} ${PCT_DOCKER_PASSWORD} ${DOCKER_REPO} ${image_version}
+        # We push to Default if the registry host is set
+        if [[ ${DOCKER_REGISTRY}:-""} != "" ]]; then
+            echo "Push image to Default registry (${DOCKER_REGISTRY})"
+            pushDocker ${DOCKER_REGISTRY} ${DOCKER_USERNAME} ${DOCKER_PASSWORD} ${DOCKER_REPO} ${image_version}
+        else
+            echo "Skipping docker push on Default registry"
+        fi
+
+        # We push to Pictime if the registry host is set and if we don't have a tag for release candidate
+        if [[ ${PCT_DOCKER_REGISTRY:-""} != "" && ! ${TRAVIS_TAG} =~ rc[0-9] ]]; then
+            echo "Push image to Pictime registry (${PCT_DOCKER_REGISTRY})"
+            pushDocker ${PCT_DOCKER_REGISTRY} ${PCT_DOCKER_USERNAME} ${PCT_DOCKER_PASSWORD} ${DOCKER_REPO} ${image_version}
         else
             echo "Skipping push on Pictime registry"
-        fi        
+        fi
     else
         echo "Not a tag or pull request, not pushing the docker image"
     fi
