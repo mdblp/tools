@@ -159,25 +159,25 @@ function publishDockerImage {
     if [ -n "${TRAVIS_TAG:-}" -a "${TRAVIS_PULL_REQUEST:-false}" == "false" -a -n "${DOCKER_USERNAME:-}" -a -n "${DOCKER_PASSWORD:-}" ]; then
         echo "Docker push"
         # This line below removes "dblp." from the TRAVIS_TAG
-        image_version=${TRAVIS_TAG/dblp./}
+        local image_version=${TRAVIS_TAG/dblp./}
 
         # We push to Default if the registry host is set
         if [[ ${DOCKER_REGISTRY}:-""} != "" ]]; then
             echo "Push image to Default registry (${DOCKER_REGISTRY})"
             pushDocker ${DOCKER_REGISTRY} ${DOCKER_USERNAME} ${DOCKER_PASSWORD} ${DOCKER_REPO} ${image_version}
         else
-            echo "Skipping docker push on Default registry"
+            echo "Skipping docker push to Default registry"
         fi
 
-        # We push to Pictime if the registry host is set and if we don't have a tag for release candidate
-        if [[ ${PCT_DOCKER_REGISTRY:-""} != "" && ! ${TRAVIS_TAG} =~ rc[0-9] ]]; then
-            echo "Push image to Pictime registry (${PCT_DOCKER_REGISTRY})"
-            pushDocker ${PCT_DOCKER_REGISTRY} ${PCT_DOCKER_USERNAME} ${PCT_DOCKER_PASSWORD} ${DOCKER_REPO} ${image_version}
+        # We push to Operations if the registry host is set and if we don't have a tag for release candidate
+        if [[ ${OPS_DOCKER_REGISTRY:-""} != "" && ! ${TRAVIS_TAG} =~ rc[0-9] ]]; then
+            echo "Push image to Operations registry (${OPS_DOCKER_REGISTRY})"
+            pushDocker ${OPS_DOCKER_REGISTRY} ${OPS_DOCKER_USERNAME} ${OPS_DOCKER_PASSWORD} ${DOCKER_REPO} ${image_version}
         else
-            echo "Skipping push on Pictime registry"
+            echo "Skipping push to Operations registry"
         fi
     else
-        echo "Not a tag or pull request, not pushing the docker image"
+        echo "Not a tag, not pushing the docker image"
     fi
 }
 
