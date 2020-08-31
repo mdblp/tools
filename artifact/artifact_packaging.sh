@@ -124,13 +124,13 @@ function buildDockerImage {
     done
 
     echo "Building docker image ${DOCKER_REPO} using ${DOCKER_FILE} from ${DOCKER_TARGET_DIR}"
-    docker build --tag "${DOCKER_REPO}" --build-arg npm_token="${nexus_token}" -f "${DOCKER_FILE}" "${DOCKER_TARGET_DIR}"
+    docker build --tag "${DOCKER_REPO}" --build-arg npm_token="${NEXUS_TOKEN}" -f "${DOCKER_FILE}" "${DOCKER_TARGET_DIR}"
 
     # Microscanner security scan on the built image
     echo "Security scan of ${DOCKER_REPO}${DOCKER_SCAN_TAG}"
     if [ -n "${DOCKER_SCAN_TAG}" -a "${DOCKER_TAG}" != "${DOCKER_SCAN_TAG}" ]; then
         echo "Using a different tag for security scan"
-        docker build --target "${DOCKER_SCAN_TAG#*:}" --tag "${DOCKER_REPO}${DOCKER_SCAN_TAG}" --build-arg npm_token="${nexus_token}" -f "${DOCKER_FILE}" "${DOCKER_TARGET_DIR}"
+        docker build --target "${DOCKER_SCAN_TAG#*:}" --tag "${DOCKER_REPO}${DOCKER_SCAN_TAG}" --build-arg npm_token="${NEXUS_TOKEN}" -f "${DOCKER_FILE}" "${DOCKER_TARGET_DIR}"
     fi
     wget -q -O scanDockerImage.sh 'https://raw.githubusercontent.com/mdblp/tools/feature/add_microscanner/artifact/scanDockerImage.sh'
     MICROSCANNER_TOKEN="${MICROSCANNER_TOKEN}" bash ./scanDockerImage.sh "${DOCKER_REPO}${DOCKER_SCAN_TAG}"

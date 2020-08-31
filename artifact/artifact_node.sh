@@ -71,7 +71,7 @@ main() {
     local docker_repo="${TRAVIS_REPO_SLUG#*/}"
 
     echo "Build docker image ${docker_repo}"
-    docker build --tag "${docker_repo}" --build-arg npm_token=${nexus_token} .
+    docker build --tag "${docker_repo}" --build-arg npm_token=${NEXUS_TOKEN} .
 
     # Microscanner security scan on the built image
     echo "Security scan"
