@@ -68,18 +68,16 @@ main() {
     fi
 
     # Build Docker image whatever (failfast strategy)
-    docker_repo="${TRAVIS_REPO_SLUG#*/}"
+    local docker_repo="${TRAVIS_REPO_SLUG#*/}"
 
     echo "Build docker image ${docker_repo}"
     docker build --tag "${docker_repo}" --build-arg npm_token=${nexus_token} .
 
-    if [ ${SECURITY_SCAN:-false} = true ]; then
-        echo "Security scan"
-        # Microscanner security scan on the built image
-        wget -q -O scanDockerImage.sh 'https://raw.githubusercontent.com/mdblp/tools/dblp/artifact/scanDockerImage.sh'
-        chmod +x scanDockerImage.sh
-        MICROSCANNER_TOKEN=${MICROSCANNER_TOKEN} ./scanDockerImage.sh ${docker_repo}
-    fi
+    # Microscanner security scan on the built image
+    echo "Security scan"
+    wget -q -O scanDockerImage.sh 'https://raw.githubusercontent.com/mdblp/tools/dblp/artifact/scanDockerImage.sh'
+    chmod +x scanDockerImage.sh
+    MICROSCANNER_TOKEN=${MICROSCANNER_TOKEN} ./scanDockerImage.sh ${docker_repo}
 
     # Push docker image only when we have a tag
     if [ -n "${TRAVIS_TAG}" ]; then
