@@ -73,11 +73,10 @@ main() {
     echo "Build docker image ${docker_repo}"
     docker build --tag "${docker_repo}" --build-arg npm_token=${NEXUS_TOKEN} .
 
-    # Microscanner security scan on the built image
-    echo "Security scan"
-    wget -q -O scanDockerImage.sh 'https://raw.githubusercontent.com/mdblp/tools/dblp/artifact/scanDockerImage.sh'
-    chmod +x scanDockerImage.sh
-    MICROSCANNER_TOKEN=${MICROSCANNER_TOKEN} ./scanDockerImage.sh ${docker_repo}
+    # Security scan on the built image
+    echo "Security scan using Trivy container"
+    local trivy_version=$(curl --silent "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${HOME}/.cache:${HOME}/.cache/ aquasec/trivy:${trivy_version} image --exit-code 1 --severity CRITICAL,HIGH ${docker_repo}
 
     # Push docker image only when we have a tag
     if [ -n "${TRAVIS_TAG}" ]; then
