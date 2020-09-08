@@ -74,9 +74,11 @@ main() {
     docker build --tag "${docker_repo}" --build-arg npm_token=${NEXUS_TOKEN} .
 
     # Security scan on the built image
-    echo "Security scan using Trivy container"
-    local trivy_version=$(curl --silent "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
-    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${HOME}/.cache:${HOME}/.cache/ aquasec/trivy:${trivy_version} image --exit-code 1 --severity CRITICAL,HIGH ${docker_repo}
+    if [ ${SECURITY_SCAN:-true} = true ]; then
+        echo "Security scan using Trivy container"
+        local trivy_version=$(curl --silent "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${HOME}/.cache:${HOME}/.cache/ aquasec/trivy:${trivy_version} image --exit-code 1 --severity CRITICAL,HIGH ${docker_repo}
+    fi
 
     # Push docker image only when we have a tag
     if [ -n "${TRAVIS_TAG}" ]; then
