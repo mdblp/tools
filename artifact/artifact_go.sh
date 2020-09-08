@@ -60,8 +60,8 @@ main() {
     if [ ${SECURITY_SCAN:-true} = true ]; then
         echo "Security scan using Trivy container"
         local trivy_version=$(curl --silent "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
-        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${HOME}/.cache:${HOME}/.cache/ aquasec/trivy:${trivy_version} image --exit-code 1 --severity CRITICAL,HIGH ${docker_repo}
         docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${HOME}/.cache:${HOME}/.cache/ aquasec/trivy:${trivy_version} image --exit-code 0 --severity MEDIUM,LOW,UNKNOWN ${docker_repo}
+        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${HOME}/.cache:${HOME}/.cache/ aquasec/trivy:${trivy_version} image --exit-code 1 --severity CRITICAL,HIGH ${docker_repo}
     fi
 
     # Push docker image only when we have a tag

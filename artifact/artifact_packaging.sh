@@ -134,8 +134,8 @@ function buildDockerImage {
             docker build --target "${DOCKER_SCAN_TAG#*:}" --tag "${DOCKER_REPO}${DOCKER_SCAN_TAG}" --build-arg npm_token="${NEXUS_TOKEN}" -f "${DOCKER_FILE}" "${DOCKER_TARGET_DIR}"
         fi
         local trivy_version=$(curl --silent "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
-        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${HOME}/.cache:${HOME}/.cache/ aquasec/trivy:${trivy_version} image --exit-code 1 --severity CRITICAL,HIGH ${DOCKER_REPO}${DOCKER_SCAN_TAG}
         docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${HOME}/.cache:${HOME}/.cache/ aquasec/trivy:${trivy_version} image --exit-code 0 --severity MEDIUM,LOW,UNKNOWN ${DOCKER_REPO}${DOCKER_SCAN_TAG}
+        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${HOME}/.cache:${HOME}/.cache/ aquasec/trivy:${trivy_version} image --exit-code 1 --severity CRITICAL,HIGH ${DOCKER_REPO}${DOCKER_SCAN_TAG}
     fi
 }
 
