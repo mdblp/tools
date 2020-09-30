@@ -29,6 +29,7 @@ triggerSecurityScan() {
         -F "variables[REPO_SLUG]=${TRAVIS_REPO_SLUG}" \
         https://git.coreye.fr/api/v4/projects/1433/trigger/pipeline
     # Attach new status "pending" to the commit for aquascanner context
+    # Our Ops partner will update the status once the scanner is finished
     echo "Set 'pending' status to commit ${TRAVIS_COMMIT}"
     curl --location --request POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" \
         --header "Authorization: Bearer ${GITHUB_TOKEN}" \
