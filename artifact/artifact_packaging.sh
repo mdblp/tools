@@ -10,6 +10,7 @@ echo "TRAVIS_PULL_REQUEST: ${TRAVIS_PULL_REQUEST:-false}"
 echo "TRAVIS_TAG: ${TRAVIS_TAG:-}"
 echo "TRAVIS_REPO_SLUG: ${TRAVIS_REPO_SLUG:-mdblp}"
 echo "NO_DEFAULT_PACKAGING: ${NO_DEFAULT_PACKAGING:-false}"
+echo "TRAVIS_PULL_REQUEST_SHA: ${TRAVIS_PULL_REQUEST_SHA}"
 
 REPO_SLUG="${TRAVIS_REPO_SLUG:-mdblp}"
 APP="${REPO_SLUG#*/}"
@@ -126,15 +127,22 @@ function buildDockerImage {
     echo "Building docker image ${DOCKER_REPO} using ${DOCKER_FILE} from ${DOCKER_TARGET_DIR}"
     docker build --tag "${DOCKER_REPO}" --build-arg npm_token="${NEXUS_TOKEN}" -f "${DOCKER_FILE}" "${DOCKER_TARGET_DIR}"
 
-    # Security scan on the built image
-    if [ ${SECURITY_SCAN:-true} = true ]; then
-        echo "Security scan of ${DOCKER_REPO}${DOCKER_SCAN_TAG}"
-        if [ -n "${DOCKER_SCAN_TAG}" -a "${DOCKER_TAG}" != "${DOCKER_SCAN_TAG}" ]; then
-            echo "Using a different tag for security scan"
-            docker build --target "${DOCKER_SCAN_TAG#*:}" --tag "${DOCKER_REPO}${DOCKER_SCAN_TAG}" --build-arg npm_token="${NEXUS_TOKEN}" -f "${DOCKER_FILE}" "${DOCKER_TARGET_DIR}"
+    # Security scan on the Operations registry
+    # The security scan is executed only for a PR build
+    # The image has to be pushed to Operations registry to benefit from their security scanner
+    if [ ${SECURITY_SCAN:-true} = true ] && [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
+        echo "Security scan"
+        local scanTag="${TRAVIS_PULL_REQUEST_SHA}-scanOnly"
+        if [ ${OPS_DOCKER_REGISTRY:-""} != "" ]; then
+            echo "Push image to Operations registry (${OPS_DOCKER_REGISTRY})"
+            pushDocker ${OPS_DOCKER_REGISTRY} ${OPS_DOCKER_USERNAME} ${OPS_DOCKER_PASSWORD} ${DOCKER_REPO} ${scanTag}
+            triggerSecurityScan ${DOCKER_REPO} ${scanTag}
+        else
+            echo "OPS Docker Registry unknown. Security Scan cannot occur."
+            exit 1
         fi
-        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${HOME}/.cache:${HOME}/.cache/ --env GITHUB_TOKEN=${GITHUB_TOKEN} aquasec/trivy image --exit-code 0 --severity MEDIUM,LOW,UNKNOWN ${DOCKER_REPO}${DOCKER_SCAN_TAG}
-        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${HOME}/.cache:${HOME}/.cache/ --env GITHUB_TOKEN=${GITHUB_TOKEN} aquasec/trivy image --exit-code 1 --severity CRITICAL,HIGH ${DOCKER_REPO}${DOCKER_SCAN_TAG}
+    else
+        echo "Skipping Security Scan"
     fi
 }
 
@@ -153,6 +161,33 @@ pushDocker() {
     docker logout $1
 }
 
+triggerSecurityScan() {
+    # $1 = docker image name
+    # $2 = docker image tag
+    echo "Trigger security scan on image $1:$2"
+    # Trigger scan at Operations registry
+    curl -X POST \
+        -F token=${OPS_SCAN_TOKEN} \
+        -F ref=master \
+        -F "variables[IMAGE_NAME]=$1" \
+        -F "variables[IMAGE_TAG]=$2" \
+        -F "variables[COMMIT_ID]=${TRAVIS_PULL_REQUEST_SHA}" \
+        -F "variables[REPO_SLUG]=${TRAVIS_REPO_SLUG}" \
+        -F "variables[REMOVE_IMAGE]=true" \
+        https://git.coreye.fr/api/v4/projects/1433/trigger/pipeline
+    # Attach new status "pending" to the commit for aquascanner context
+    # Our Ops partner will update the status once the scanner is finished
+    echo "Set 'pending' status to commit ${TRAVIS_PULL_REQUEST_SHA}"
+    curl --location --request POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_PULL_REQUEST_SHA}" \
+        --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+        --header 'Content-Type: application/json' \
+        --data-raw '{
+            "state": "pending",
+            "description": "The security scan is running!",
+            "context": "aquascanner"
+        }'
+}
+
 # Publish docker image only when we have a tag.
 # To avoid publishing 2x (on the branch build + PR) do not do it on the PR build.
 function publishDockerImage {
@@ -162,7 +197,7 @@ function publishDockerImage {
         local image_version=${TRAVIS_TAG/dblp./}
 
         # We push to Default if the registry host is set
-        if [[ ${DOCKER_REGISTRY}:-""} != "" ]]; then
+        if [ ${DOCKER_REGISTRY:-""} != "" ]; then
             echo "Push image to Default registry (${DOCKER_REGISTRY})"
             pushDocker ${DOCKER_REGISTRY} ${DOCKER_USERNAME} ${DOCKER_PASSWORD} ${DOCKER_REPO} ${image_version}
         else
