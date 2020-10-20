@@ -45,7 +45,7 @@ triggerSecurityScan() {
 main() {
     # $1 name of the app
     local PARAM_APP_NAME=${1:-} 
-    echo "Working on ${PARAM_APP_NAME}"
+    echo "Working on ${APP}"
     # Print some variables, so we can debug this script if something goes wrong
     echo "ARTIFACT_GO_VERSION: ${ARTIFACT_GO_VERSION}"
     echo "TRAVIS_GO_VERSION: ${TRAVIS_GO_VERSION}"
