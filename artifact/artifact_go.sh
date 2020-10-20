@@ -45,6 +45,14 @@ triggerSecurityScan() {
 main() {
     # $1 name of the app
     local PARAM_APP_NAME=${1:-} 
+    local DOCKER_CMD=""
+    if [ -n "${PARAM_APP_NAME}" ]; then
+        APP="${TRAVIS_REPO_SLUG#*/}-${PARAM_APP_NAME}"
+        DOCKER_CMD="-f Dockerfile.${PARAM_APP_NAME}"
+    else
+        APP="${TRAVIS_REPO_SLUG#*/}"
+    fi
+
     echo "Working on ${APP}"
     # Print some variables, so we can debug this script if something goes wrong
     echo "ARTIFACT_GO_VERSION: ${ARTIFACT_GO_VERSION}"
@@ -71,14 +79,6 @@ main() {
     if [ ${BUILD_SOUP:-false} = true -a -f ${SOUP_SCRIPT} ]; then
         echo "Build SOUPs list"
         ./${SOUP_SCRIPT}
-    fi
-
-    local DOCKER_CMD=""
-    if [ -n "${PARAM_APP_NAME}" ]; then
-        APP="${TRAVIS_REPO_SLUG#*/}-${PARAM_APP_NAME}"
-        DOCKER_CMD="-f Dockerfile.${PARAM_APP_NAME}"
-    else
-        APP="${TRAVIS_REPO_SLUG#*/}"
     fi
 
     if [ ${ARTIFACT_BUILD:-true} = true ]; then
@@ -149,4 +149,17 @@ main() {
     fi
 }
 
-main $1
+
+for param in "$@"
+do
+    case $param in
+    service=*)
+        SERVICE="${param#*=}"
+        main $SERVICE
+        shift
+        ;;
+    *)
+        main
+        ;;
+    esac
+done
