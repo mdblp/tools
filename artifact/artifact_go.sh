@@ -150,16 +150,21 @@ main() {
 }
 
 
-for param in "$@"
-do
-    case $param in
-    service=*)
-        SERVICE="${param#*=}"
-        main $SERVICE
-        shift
-        ;;
-    *)
-        main
-        ;;
-    esac
-done
+# Test if any arguments
+if [ $# == 0 ]; then 
+    main
+else
+    for param in "$@"
+    do
+        case $param in
+        service=*)
+            SERVICE="${param#*=}"
+            main $SERVICE
+            shift
+            ;;
+        *)
+            main
+            ;;
+        esac
+    done
+fi
