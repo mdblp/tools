@@ -43,9 +43,20 @@ triggerSecurityScan() {
 }
 
 main() {
+    # $1 name of the app
+    local PARAM_APP_NAME=${1:-} 
+    local DOCKER_CMD=""
+    if [ -n "${PARAM_APP_NAME}" ]; then
+        APP="${TRAVIS_REPO_SLUG#*/}-${PARAM_APP_NAME}"
+        DOCKER_CMD="-f Dockerfile.${PARAM_APP_NAME}"
+    else
+        APP="${TRAVIS_REPO_SLUG#*/}"
+    fi
+
+    echo "Working on ${APP}"
     # Print some variables, so we can debug this script if something goes wrong
-    echo "ARTIFACT_NODE_VERSION: ${ARTIFACT_NODE_VERSION}"
-    echo "TRAVIS_NODE_VERSION: ${TRAVIS_NODE_VERSION}"
+    echo "ARTIFACT_GO_VERSION: ${ARTIFACT_GO_VERSION}"
+    echo "TRAVIS_GO_VERSION: ${TRAVIS_GO_VERSION}"
     echo "TRAVIS_BRANCH: ${TRAVIS_BRANCH}"
     echo "TRAVIS_PULL_REQUEST: ${TRAVIS_PULL_REQUEST}"
     echo "TRAVIS_TAG: ${TRAVIS_TAG}"
@@ -70,27 +81,29 @@ main() {
         ./${SOUP_SCRIPT}
     fi
 
-    if [ -n "${TRAVIS_TAG:-}" ]; then
-        ARTIFACT_DIR='deploy'
-
-        APP="${TRAVIS_REPO_SLUG#*/}"
-        APP_DIR="${ARTIFACT_DIR}/${APP}"
-        APP_TAG="${APP}-${TRAVIS_TAG}"
-
-        rm -rf "${ARTIFACT_DIR}/" || { echo 'ERROR: Unable to delete artifact directory'; exit 1; }
-        mkdir -p "${APP_DIR}/" || { echo 'ERROR: Unable to create app directory'; exit 1; }
-
+    if [ ${ARTIFACT_BUILD:-true} = true ]; then
+        # Let's build
         ./build.sh || { echo 'ERROR: Unable to build project'; exit 1; }
+        if [ -n "${TRAVIS_TAG:-}" -a ${ARTIFACT_DEPLOY:-true} = true ]; then
+            # Prepare deployment artifacts
+            ARTIFACT_DIR='deploy'
 
-        mv dist "${APP_DIR}/${APP_TAG}" || { echo 'ERROR: Unable to move app artifact directory'; exit 1; }
+            APP_DIR="${ARTIFACT_DIR}/${APP}"
+            APP_TAG="${APP}-${TRAVIS_TAG}"
 
-        tar -c -z -f "${APP_DIR}/${APP_TAG}.tar.gz" -C "${APP_DIR}" "${APP_TAG}" || { echo 'ERROR: Unable to create artifact'; exit 1; }
+            rm -rf "${ARTIFACT_DIR}/" || { echo 'ERROR: Unable to delete artifact directory'; exit 1; }
+            mkdir -p "${APP_DIR}/" || { echo 'ERROR: Unable to create app directory'; exit 1; }
+
+            mv dist "${APP_DIR}/${APP_TAG}" || { echo 'ERROR: Unable to move app artifact directory'; exit 1; }
+
+            tar -c -z -f "${APP_DIR}/${APP_TAG}.tar.gz" -C "${APP_DIR}" "${APP_TAG}" || { echo 'ERROR: Unable to create artifact'; exit 1; }
+        fi
     fi
 
     # Build Docker image whatever (failfast strategy)
-    local docker_repo="${TRAVIS_REPO_SLUG#*/}"
+    local docker_repo="${APP}"
     echo "Build Docker image ${docker_repo}"
-    docker build --tag "${docker_repo}" .
+    docker build --tag "${docker_repo}" ${DOCKER_CMD} .
 
     # Security scan on the Operations registry
     # The security scan is executed only for a PR build
@@ -136,4 +149,22 @@ main() {
     fi
 }
 
-main
+
+# Test if any arguments
+if [ $# == 0 ]; then 
+    main
+else
+    for param in "$@"
+    do
+        case $param in
+        service=*)
+            SERVICE="${param#*=}"
+            main $SERVICE
+            shift
+            ;;
+        *)
+            main
+            ;;
+        esac
+    done
+fi
