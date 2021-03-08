@@ -103,7 +103,7 @@ main() {
     # Build Docker image whatever (failfast strategy)
     local docker_repo="${APP}"
     echo "Build Docker image ${docker_repo}"
-    docker build --tag "${docker_repo}" ${DOCKER_CMD} .
+    docker build --tag "${docker_repo}" --build-arg GITHUB_TOKEN=${GITHUB_TOKEN} ${DOCKER_CMD} .
 
     # Security scan on the Operations registry
     # The security scan is executed only for a PR build
